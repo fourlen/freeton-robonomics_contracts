@@ -17,6 +17,7 @@ const { LighthouseContract } = require('../../artifacts/LighthouseContract.js');
 const { RootContract } = require('../../artifacts/RootContract.js');
 const { XRTContract } = require('../../artifacts/XRTContract.js');
 const { SimpleWalletContract } = require('../../artifacts/SimpleWalletContract.js')
+const { MultiValidatorExampleContract } = require('../../artifacts/MultiValidatorExampleContract.js')
 
 const { constructContracts, getLighthouseAddress } = require('../common.js')
 
@@ -119,15 +120,27 @@ async function main(client) {
     const simpleWallet = new Account(SimpleWalletContract, {signer: signerKeys(keys), client: client, initData: {nonce: 0} });
     const { root, xrt } = await constructContracts(client, keys)
     const lighthouse = new Account(LighthouseContract, { address: await getLighthouseAddress(client, root, xrt, 'Lighthouse'), client: client })
+    const validator = new Account(MultiValidatorExampleContract,
+      {signer: signerKeys(keys), client: client,
+       initData: {
+           lighthouse: await getLighthouseAddress(client, root, xrt, 'Lighthouse'),
+           k: 2,
+           pubkeys: {
+              1: '0x' + keys.public,
+              2: '0x' + keys.public,
+              3: '0x' + keys.public
+           }
+       }
+    });
 
     const terms = {
       model: Buffer.from('Super model'),
       objective: Buffer.from('Very important objective'),
-      cost: 3,
+      cost: 1,
       token: await xrt.getAddress(),
-      penalty: 3,
-      validatorContract: '0',
-      validatorPubkey: '0x' + keys.public
+      penalty: 2,
+      validatorContract: await validator.getAddress(), // '0'
+      validatorPubkey: '0' //'0x' + keys.public
     }
 
     const demand = {
@@ -138,7 +151,7 @@ async function main(client) {
       customerPubkey: '0x' + keys.public,
       nonce: 0,
       deadline: 0xffffffff,
-      validatorFee: 2
+      validatorFee: 4
     }
 
     const offer = {
@@ -149,7 +162,7 @@ async function main(client) {
       executorPubkey: '0x' + keys.public,
       nonce: 0,
       deadline: 0xffffffff,
-      providerFee: 1
+      providerFee: 8
     }
 
     const demandCell = await encodeDemand(client, demand)

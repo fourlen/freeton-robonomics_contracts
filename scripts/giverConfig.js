@@ -46,16 +46,17 @@ const giverAbi = abiContract({
     events: []
 });
 
+var giverKeyPair;
 try {
     const fs = require('fs');
     const path = require('path');
     const keysFile = path.join(__dirname, 'giverKeys.json');
-    const giverKeyPair = JSON.parse(fs.readFileSync(keysFile, "utf8"));
+    giverKeyPair = JSON.parse(fs.readFileSync(keysFile, "utf8"));
     console.log('Using specified giver keys...')
 }
-catch() {
+catch(err) {
   console.log('Using default giver keys...') // TON OS SE giver keys
-  const giverKeyPair = {
+  giverKeyPair = {
     "public": "2ada2e65ab8eeab09490e3521415f45b6e42df9c760a639bcf53957550b25a16",
     "secret": "172af540e43a524763dd53b26a066d472a97c4de37d5498170564510608250c3"
   }

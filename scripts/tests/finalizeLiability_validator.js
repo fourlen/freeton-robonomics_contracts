@@ -17,6 +17,7 @@ const { LighthouseContract } = require('../../artifacts/LighthouseContract.js');
 const { RootContract } = require('../../artifacts/RootContract.js');
 const { XRTContract } = require('../../artifacts/XRTContract.js');
 const { SimpleWalletContract } = require('../../artifacts/SimpleWalletContract.js')
+const { MultiValidatorExampleContract } = require('../../artifacts/MultiValidatorExampleContract.js')
 
 const { constructContracts, getLighthouseAddress } = require('../common.js')
 
@@ -67,34 +68,34 @@ async function main(client) {
     const { root, xrt } = await constructContracts(client, keys)
     const lighthouse = new Account(LighthouseContract, { address: await getLighthouseAddress(client, root, xrt, 'Lighthouse'), client: client })
 
-    const liabilityHash = '0x81eed260fc24dfe3b9d42c357680f87f0c0e611544ac81b70b82b14cd916f205'
+    const validator = new Account(MultiValidatorExampleContract,
+      {signer: signerKeys(keys), client: client,
+       initData: {
+           lighthouse: await lighthouse.getAddress(),
+           k: 2,
+           pubkeys: {
+              1: '0x' + keys.public,
+              2: '0x' + keys.public,
+              3: '0x' + keys.public
+           }
+       }
+    });
 
-    const dataCell = (await client.boc.encode_boc({
+    const liabilityHash = '0x1a2e21d5c52aa180302b05b744c84a1e29b1a10f96791e960640e03fc5812b76'
+
+    var dataCell = (await client.boc.encode_boc({
         builder: [
+            addrInt(await validator.getAddress()),
+            u32(42),
             bytes(Buffer.from('Super result')),
             u256(liabilityHash),
-            b1,
-            addrInt(await root.getAddress()) 
+            b1
         ]
     })).boc;
-    const dataHash = Buffer.from((await client.boc.get_boc_hash({boc : dataCell})).hash, 'hex')
+    var dataHash = Buffer.from((await client.boc.get_boc_hash({boc : dataCell})).hash, 'hex')
+    var signature = await signHash(client, dataHash, keys)
 
-    const signature = await signHash(client, dataHash, keys)
-
-    message = (await client.abi.encode_message_body({
-        abi: abiContract(LighthouseContract.abi),
-        call_set: {
-            function_name: 'finalizeLiability',
-            input: {
-                dataCell: dataCell,
-                signature: signature
-            }
-        },
-        is_internal: true,
-        signer: signerNone()
-    }))['body'];
-
-    const messageSubscription = await client.net.subscribe_collection({
+    await client.net.subscribe_collection({
         collection: "messages",
         filter: {
             src: { eq: await lighthouse.getAddress() },
@@ -109,27 +110,37 @@ async function main(client) {
           console.log('>>> ', decoded);
         }
     });
-
-    res = await simpleWallet.run('sendMessage', {dest : await lighthouse.getAddress(),
-                                                 value: 10_000_000_000,
-                                                 mode: 0,
-                                                 bounce: true,
-                                                 payload: message});
-
-    /*res = await lighthouse.runLocal('createLiability', {
-        demandCell : demandCell,
-        customerSignature : customerSignature,
-        offerCell : offerCell,
-        executorSignature: executorSignature
+    await client.net.subscribe_collection({
+        collection: "messages",
+        filter: {
+            src: { eq: await validator.getAddress() },
+        },
+        result: "id, src, dst, msg_type, value, boc, body",
+    }, async (params, responseType) => {
+        if (params.result.msg_type == 2) {
+          const decoded = (await client.abi.decode_message({
+                    abi: abiContract(MultiValidatorExampleContract.abi),
+                    message: params.result.boc,
+                }));
+          console.log('>>> ', decoded);
+        }
     });
-    console.log(res)*/
 
-    const res_balance = await lighthouse.runLocal('balances', {})
-    console.log(res_balance.decoded.output.balances)
-    const res_stakes = await lighthouse.runLocal('stakes', {})
-    console.log(res_stakes.decoded.output.stakes)
-    res = await lighthouse.runLocal('currentQuota', {})
-    console.log(res.decoded.output.currentQuota)
+    validator.run('addProposal', {pubkey_id : 1, dataCell: dataCell, signature: signature});
+
+    dataCell = (await client.boc.encode_boc({
+       builder: [
+           addrInt(await validator.getAddress()),
+           u32(42),
+       ]
+    })).boc;
+    dataHash = Buffer.from((await client.boc.get_boc_hash({boc : dataCell})).hash, 'hex')
+    signature = await signHash(client, dataHash, keys)
+
+    validator.run('signProposal', {pubkey_id : 2, dataCell: dataCell, signature: signature});
+
+    console.log('Now waiting 5 sec...')
+    await new Promise(resolve => setTimeout(resolve, 5000));
 }
 
 (async () => {
