@@ -81,7 +81,7 @@ async function main(client) {
        }
     });
 
-    const liabilityHash = '0x1a2e21d5c52aa180302b05b744c84a1e29b1a10f96791e960640e03fc5812b76'
+    const liabilityHash = '0x501a89e93fdd70cfec3eb42fa9e8a5a2bbb5ce2ff785fe505f708597dc17a493'
 
     var dataCell = (await client.boc.encode_boc({
         builder: [
@@ -102,12 +102,16 @@ async function main(client) {
         },
         result: "id, src, dst, msg_type, value, boc, body",
     }, async (params, responseType) => {
-        if (params.result.msg_type == 2) {
-          const decoded = (await client.abi.decode_message({
-                    abi: abiContract(LighthouseContract.abi),
-                    message: params.result.boc,
-                }));
-          console.log('>>> ', decoded);
+        try{
+          if (params.result.msg_type == 2) {
+            const decoded = (await client.abi.decode_message({
+                      abi: abiContract(LighthouseContract.abi),
+                      message: params.result.boc,
+                  }));
+            console.log('>>> ', decoded);
+          }
+        } catch(err) {
+          console.log(err)
         }
     });
     await client.net.subscribe_collection({
@@ -117,12 +121,16 @@ async function main(client) {
         },
         result: "id, src, dst, msg_type, value, boc, body",
     }, async (params, responseType) => {
-        if (params.result.msg_type == 2) {
-          const decoded = (await client.abi.decode_message({
-                    abi: abiContract(MultiValidatorExampleContract.abi),
-                    message: params.result.boc,
-                }));
-          console.log('>>> ', decoded);
+        try {
+          if (params.result.msg_type == 2) {
+            const decoded = (await client.abi.decode_message({
+                      abi: abiContract(MultiValidatorExampleContract.abi),
+                      message: params.result.boc,
+                  }));
+            console.log('>>> ', decoded);
+          }
+        } catch(err) {
+          console.log(err)
         }
     });
 
