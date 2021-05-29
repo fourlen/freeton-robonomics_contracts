@@ -10,6 +10,7 @@ interface ILighthouse {
       responsible returns (bool);
 }
 
+// sample on-chain validator which collects votes on result from predefined off-chain validators and sends the result when there are enough of them
 contract Validator {
     event NewProposal(uint32 proposalId, uint8 pubkey_id);
     event NewVote(uint32 proposalId, uint8 cnt, uint8 pubkey_id);
