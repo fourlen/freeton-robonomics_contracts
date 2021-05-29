@@ -139,8 +139,8 @@ async function main(client) {
       cost: 1,
       token: await xrt.getAddress(),
       penalty: 2,
-      validatorContract: await validator.getAddress(), // '0'
-      validatorPubkey: '0' //'0x' + keys.public
+      validatorContract:  '0', // await validator.getAddress(),
+      validatorPubkey: '0x' + keys.public // 0'
     }
 
     const demand = {

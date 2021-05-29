@@ -67,14 +67,14 @@ async function main(client) {
     const { root, xrt } = await constructContracts(client, keys)
     const lighthouse = new Account(LighthouseContract, { address: await getLighthouseAddress(client, root, xrt, 'Lighthouse'), client: client })
 
-    const liabilityHash = '0x81eed260fc24dfe3b9d42c357680f87f0c0e611544ac81b70b82b14cd916f205'
+    const liabilityHash = ''
 
     const dataCell = (await client.boc.encode_boc({
         builder: [
             bytes(Buffer.from('Super result')),
             u256(liabilityHash),
             b1,
-            addrInt(await root.getAddress()) 
+            addrInt(await root.getAddress())
         ]
     })).boc;
     const dataHash = Buffer.from((await client.boc.get_boc_hash({boc : dataCell})).hash, 'hex')

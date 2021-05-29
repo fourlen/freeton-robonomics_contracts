@@ -16,4 +16,6 @@ This and other script listen to events emited by the contracts and display them.
 
 After that you may want to register one or several providers with registerProvider.js (also using simple wallets).
 
-Registered a provider, you may consume one quota with no_liabilities.js, refill or withdraw stake, create and then finalize liability with the corresponding scripts. Also you may wait for the timeout and check charging fines mechanism with checkTimeout.js.
+Registered a provider, you may consume one quota with no_liabilities.js, refill or withdraw stake, create and then finalize liability with the corresponding scripts. Also you may wait for the timeout and check charging fines mechanism with checkTimeout.js, or test on-chain validator finalization (you have to edit createLiability script for this).
+
+By now you have to manually copy the liability hash printed by createLiability and paste it in finalizeLiability script.
