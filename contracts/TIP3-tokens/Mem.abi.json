@@ -1,0 +1,42 @@
+{
+	"ABI version": 2,
+	"header": ["time", "expire"],
+	"functions": [
+		{
+			"name": "constructor",
+			"inputs": [
+				{"name":"rootToken_","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "mint",
+			"inputs": [
+				{"name":"value","type":"uint128"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "rootToken",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"rootToken","type":"address"}
+			]
+		},
+		{
+			"name": "kek",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"kek","type":"uint256"}
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	]
+}
