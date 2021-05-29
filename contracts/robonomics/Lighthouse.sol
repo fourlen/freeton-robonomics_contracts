@@ -1,7 +1,6 @@
 pragma ton-solidity >= 0.42.0;
 
 import './interface/ILiability.sol';
-import './interface/IValidator.sol';
 import './interface/ILighthouse.sol';
 //import './Root.sol';
 import '../ERC20/IERC20.sol';
@@ -103,19 +102,6 @@ contract Lighthouse {
             // return change to token holder
             tvm.rawReserve(address(this).balance - msg.value, 0);
             holder.transfer({value: 0, flag: 128});
-        }
-        else if (tag == 1) { // validator query
-            (bytes result, uint256 liabilityHash, bool success) = queryInfo.decode(bytes, uint256, bool);
-            address validatorPaymentAddress = queryInfo.decode(address);
-            address provider = queryInfo.decode(address);
-
-            bool ans = msgData.decode(bool);
-            if (ans)
-              _finalizeLiability(result, liabilityHash, success, validatorPaymentAddress);
-
-            // return the remaining value
-            tvm.rawReserve(address(this).balance - msg.value, 0);
-            provider.transfer({value: 0, flag: 128});
         }
         else if (tag == 2) { // transfer attempt for withdrawnBalance
             (address token, address holder, uint128 value) = queryInfo.decode(address, address, uint128);
@@ -285,11 +271,33 @@ contract Lighthouse {
         emit LiabilityFinalized(liabilityHash, success, result);
     }
 
+    // called by on-chain validator contract
+    function finalizeLiability_validatorContarct(
+        bytes result,
+        uint256 liabilityHash,
+        bool success
+    )
+        external functionID(11)
+        responsible returns (bool)
+    {
+        Liability liability = liabilityByHash[liabilityHash];
+        DOParams terms = liability.terms; // it probably will cost less gas
+
+        // because of TonLabs ABI mixture of methods called by external or internal messages
+        // msg.sender can be equal to zero
+        require(terms.validatorContract != address(0));
+        require(terms.validatorContract == msg.sender);
+
+        _finalizeLiability(result, liabilityHash, success, msg.sender);
+
+        // return change
+        tvm.rawReserve(address(this).balance - msg.value, 0);
+        return{value: 0, flag: 128} true;
+    }
+
+    // called by provider when validator is external
     function finalizeLiability(
         TvmCell dataCell,
-        uint256 validatorPubkey, // in case validatorContract is set in terms; otherwise set it to zero
-                                 // optional(uint256) actually; ABI doesn't support this
-
         TvmCell signature
     )
         external functionID(5)
@@ -301,36 +309,19 @@ contract Lighthouse {
         address validatorPaymentAddress = data.decode(address); // address for paying validator fee
                                                                 // signed with current validator (possibly the executor)
 
-
         Liability liability = liabilityByHash[liabilityHash];
         DOParams terms = liability.terms; // it probably will cost less gas
 
-        if (terms.validatorContract != address(0) || terms.validatorPubkey > 0) {
-            if (terms.validatorContract != address(0)) {
-                require(tvm.checkSign(tvm.hash(dataCell), signature.toSlice(), validatorPubkey));
+        // validator is external
+        require(terms.validatorContract == address(0));
 
-                TvmBuilder queryInfo;
-                queryInfo.storeUnsigned(1, 3); // constructor tag
-                queryInfo.store(result, liabilityHash, success);
-                queryInfo.store(validatorPaymentAddress);
-                queryInfo.store(msg.sender); // for change returning
-                uint32 index = addQuery(_QueryInfo(terms.validatorContract, queryInfo.toCell()));
-
-                TvmBuilder payload;
-                payload.storeUnsigned(17 /*isValidator function id*/, 32);
-                payload.storeUnsigned(index, 32); // answer_id
-                payload.store(validatorPubkey); // arguments of IValidator.isValidator
-                terms.validatorContract.transfer(
-                  {value: 1 ton, bounce: true, flag: 0, body: payload.toCell()}); // send message
-            }
-            else {
-                require(tvm.checkSign(tvm.hash(dataCell), signature.toSlice(), terms.validatorPubkey));
-                _finalizeLiability(result, liabilityHash, success, validatorPaymentAddress);
-            }
-        } else {
+        // check the signature
+        if (terms.validatorPubkey > 0)
+            require(tvm.checkSign(tvm.hash(dataCell), signature.toSlice(), terms.validatorPubkey));
+        else
             require(tvm.checkSign(tvm.hash(dataCell), signature.toSlice(), liability.executorPubkey));
-            _finalizeLiability(result, liabilityHash, success, validatorPaymentAddress);
-        }
+
+        _finalizeLiability(result, liabilityHash, success, validatorPaymentAddress);
 
         consumeQuota();
     }
