@@ -13,5 +13,8 @@
     "@tonclient/appkit": "^0.2.0",
     "@tonclient/core": "^1.15.0",
     "@tonclient/lib-node": "^1.15.0"
+  },
+  "devDependencies": {
+    "tondev": "^0.6.0"
   }
 }
