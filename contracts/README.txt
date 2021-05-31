@@ -1,9 +1,18 @@
 ERC20 standard is used for tokens manipulations. TON Blockchain's ExctraCurrency mechanism should be used instead, but it is unsupported presently.
-TIP-3 is quite awkward and not developed enought.
+TIP-3 is quite awkward and not developed enough.
 
 Time periods is measured in unixtime, not blocks, because block.number could suddenly increase by significant value after two shards merged, also the protocol doesn't enforce some strict conditions on the (average) block creation time (it could be from 3 to 5 seconds according to docs).
 
-Global TODO: deal with storage fees; One way is to just reserve some small balance and return change +- the difference between desired and actual balance
+Architectural changes w.r.t. Ethereum Robonomics contracts:
+1. Liabilities are part of Lighthouse persistent state, not separate contracts
+2. More complicated provider queuing logic, fines for not being online introduced
+3. Factory is now Root; used only for creating Lighthouses and (as planned) minting XRTs on Lighthouses queries.
+4. On-chain validator now is capable of more complex logic, not only telling if pubkey is valid off-chain validator.
+5. Penalty for not completing the task is introduced for executor (it is a new parameter which must coincide in demand-offer matching)
+6. Creating a demand customer (as well as executor creating an offer) has to sign isDemand field (which prevents demand-offer replacement attacks).
+7. Users of Lighthouse (providers, customers, executors) must initially transfer some balance to the Lighthouse contract and only then perform any kind of operations (not just approving this spending for Lighthouse contract). It simplifies payment logic complicated by TON Blockchain asynchronous nature (of contracts interaction).
+
+Global TODO: handle storage fees; one way is to just reserve some small balance and return change +- the difference between desired and actual balance
 
 Known issues:
 1. someone could spam root contract with create liability queries, thus leading to large storage fees of isLighthouse map or/and wasting good names of lighthouses with bad parametrs
