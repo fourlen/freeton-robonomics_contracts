@@ -15,7 +15,6 @@ const config = require('./config');
 const { LighthouseContract } = require('../artifacts/LighthouseContract.js');
 const { RootContract } = require('../artifacts/RootContract.js');
 const { XRTContract } = require('../artifacts/XRTContract.js');
-const { SimpleWalletContract } = require('../artifacts/SimpleWalletContract.js')
 
 const { constructContracts } = require('./common.js')
 
@@ -38,6 +37,7 @@ async function main(client) {
     console.log(`Deploying root...`)
 
     if (config['network']['type'] == 'test') {
+      const { SimpleWalletContract } = require('../artifacts/SimpleWalletContract.js')
       for (var i = 0; i < 3; i++) {
           const simpleWallet = new Account(SimpleWalletContract, {signer: signerKeys(keys), client: client, initData: {nonce: i}});
           config['toMint'].push({to : (await simpleWallet.getAddress()), value: 500_000_000_000})

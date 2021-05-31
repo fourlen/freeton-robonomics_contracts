@@ -1,4 +1,5 @@
 Use compile.sh script to compile Root.sol, XRT.sol and Lighthouse.sol and move all the artifacts to the corresponding folder.
+Also you can specify which contracts to compile in compile.sh arguments. For example, compile.sh SimpleWallet (you have to run it at least once to generate artifacts if you are working with test network) or compile.sh robonomics/validator/MultiValidatorExample
 
 To redeploy the contracts after making some changes and recompiling them run newKeys.js for generating new keys (they also serve as nonce for contract addresses, so the new project version won't conflict with older versions which has been already deployed), then run deployContracts.js (for the first deploy it also works fine).
 All the scripts read some config params from the config.js (e.g. which network to use), check it out.
