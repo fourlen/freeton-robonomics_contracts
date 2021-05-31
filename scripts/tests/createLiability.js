@@ -52,6 +52,14 @@ const addrInt = (x) => {
     return bits(`n100${wid}${addr}`);
 };
 
+// why don't they have builderOpCompose...
+const maybe = (t, x) => {
+  if (x === undefined) {
+    return [b0];
+  }
+  return [b1, builderOpCell([t(x)])];
+}
+
 async function encodeDOParams(client, terms) {
     const res = (await client.boc.encode_boc({
         builder: [
@@ -60,10 +68,10 @@ async function encodeDOParams(client, terms) {
             u128(terms.cost),
             addrInt(terms.token),
             u128(terms.penalty),
-            builderOpCell([
-                addrInt(terms.validatorContract),
-                u256(terms.validatorPubkey)
-            ])
+            builderOpCell(
+                maybe(addrInt, terms.validatorContract).concat(
+                maybe(u256, terms.validatorPubkey))
+            )
         ]
     })).boc;
     return res;
@@ -139,8 +147,8 @@ async function main(client) {
       cost: 1,
       token: await xrt.getAddress(),
       penalty: 2,
-      validatorContract:  '0', // await validator.getAddress(),
-      validatorPubkey: '0x' + keys.public // 0'
+      //validatorContract:  await validator.getAddress(),
+      validatorPubkey: '0x' + keys.public
     }
 
     const demand = {

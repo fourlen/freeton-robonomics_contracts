@@ -67,7 +67,7 @@ async function main(client) {
     const { root, xrt } = await constructContracts(client, keys)
     const lighthouse = new Account(LighthouseContract, { address: await getLighthouseAddress(client, root, xrt, 'Lighthouse'), client: client })
 
-    const liabilityHash = ''
+    const liabilityHash = '0x0576ad9522637bfc4fced81aedf32bb58e9a9d5373dc3913b239f130ed9342c7'
 
     const dataCell = (await client.boc.encode_boc({
         builder: [

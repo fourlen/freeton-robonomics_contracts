@@ -1,4 +1,4 @@
-pragma ton-solidity >= 0.42.0;
+pragma ton-solidity >= 0.45.0;
 
 // they don't support storing large structures via builder and decoding via slice, so we need to implement it manually
 library DOParamsCoding {
@@ -11,8 +11,8 @@ library DOParamsCoding {
     res.token = slice.decode(address);
     res.penalty = slice.decode(uint128);
     slice = slice.loadRefAsSlice();
-    res.validatorContract = slice.decode(address);
-    res.validatorPubkey = slice.decode(uint256);
+    res.validatorContract = slice.decode(optional(address));
+    res.validatorPubkey = slice.decode(optional(uint256));
 
     return res;
   }
@@ -59,13 +59,8 @@ struct DOParams {
   uint128 penalty; // the penalty executor should pay when unable to perform the order
 
   // Actually Validator = Contract address | Pubkey uint256 | None
-  // optional(address) validatorContract;
-  // optional(uint256) validatorPubkey;
-
-  // they don't support decoding optional types so I have to store this fields as is
-  // and use 0 as default value for empty optional
-  address validatorContract;
-  uint256 validatorPubkey;
+  optional(address) validatorContract;
+  optional(uint256) validatorPubkey;
 }
 
 // signed by customer

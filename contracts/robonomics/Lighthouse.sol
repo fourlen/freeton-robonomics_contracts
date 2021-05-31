@@ -1,4 +1,4 @@
-pragma ton-solidity >= 0.42.0;
+pragma ton-solidity >= 0.45.0;
 
 import './interface/ILiability.sol';
 import './interface/ILighthouse.sol';
@@ -283,10 +283,8 @@ contract Lighthouse {
         Liability liability = liabilityByHash[liabilityHash];
         DOParams terms = liability.terms; // it probably will cost less gas
 
-        // because of TonLabs ABI mixture of methods called by external or internal messages
-        // msg.sender can be equal to zero
-        require(terms.validatorContract != address(0));
-        require(terms.validatorContract == msg.sender);
+        require(terms.validatorContract.hasValue());
+        require(terms.validatorContract.get() == msg.sender);
 
         _finalizeLiability(result, liabilityHash, success, msg.sender);
 
@@ -313,11 +311,11 @@ contract Lighthouse {
         DOParams terms = liability.terms; // it probably will cost less gas
 
         // validator is external
-        require(terms.validatorContract == address(0));
+        require(!terms.validatorContract.hasValue());
 
         // check the signature
-        if (terms.validatorPubkey > 0)
-            require(tvm.checkSign(tvm.hash(dataCell), signature.toSlice(), terms.validatorPubkey));
+        if (terms.validatorPubkey.hasValue())
+            require(tvm.checkSign(tvm.hash(dataCell), signature.toSlice(), terms.validatorPubkey.get()));
         else
             require(tvm.checkSign(tvm.hash(dataCell), signature.toSlice(), liability.executorPubkey));
 
