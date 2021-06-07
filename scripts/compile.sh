@@ -6,7 +6,7 @@ else
     declare -a contracts
     for contract in "$@"
     do
-        contracts+=$contract
+        contracts+=($contract)
     done
 fi
 
