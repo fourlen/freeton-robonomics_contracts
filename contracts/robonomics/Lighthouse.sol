@@ -168,12 +168,14 @@ contract Lighthouse {
     }
 
     function decreaseBalance(address holder, address token, uint128 value) internal {
-        uint128 oldValue = balances[holder][token];
+        mapping(address => uint128) dict = balances[holder];
+        uint128 oldValue = dict[token];
         if (oldValue == value) {
-            delete balances[holder][token];
-            if (balances[holder].empty()) {
+            delete dict[token];
+            if (dict.empty())
                 delete balances[holder];
-            }
+            else
+                balances[holder] = dict;
         }
         else
             balances[holder][token] = oldValue - value;
