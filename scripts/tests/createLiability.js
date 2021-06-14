@@ -123,6 +123,18 @@ async function signHash(client, hash, keys) {
     })).boc;
 }
 
+async function unused_nonce(client, dict, encoder, lighthouse) {
+    nonce = 0
+    const used = (await lighthouse.runLocal('hashUsed', {})).decoded.output.hashUsed
+    do {
+        dict.nonce = nonce
+        nonce++
+        var cell = await encoder(client, dict)
+        var hash = '0x' + (await client.boc.get_boc_hash({boc : cell})).hash
+    } while (hash in used)
+    return dict
+}
+
 async function main(client) {
     const keys = JSON.parse(fs.readFileSync(keysFile, "utf8"));
     const simpleWallet = new Account(SimpleWalletContract, {signer: signerKeys(keys), client: client, initData: {nonce: 0} });
@@ -151,7 +163,7 @@ async function main(client) {
       validatorPubkey: '0x' + keys.public
     }
 
-    const demand = {
+    var demand = {
       terms: terms,
       isDemand: true,
       lighthouse: await lighthouse.getAddress(),
@@ -162,7 +174,7 @@ async function main(client) {
       validatorFee: 4
     }
 
-    const offer = {
+    var offer = {
       terms: terms,
       isDemand: false,
       lighthouse: await lighthouse.getAddress(),
@@ -172,6 +184,10 @@ async function main(client) {
       deadline: 0xffffffff,
       providerFee: 8
     }
+
+    demand = await unused_nonce(client, demand, encodeDemand, lighthouse)
+    offer = await unused_nonce(client, offer, encodeOffer, lighthouse)
+
 
     const demandCell = await encodeDemand(client, demand)
     const offerCell = await encodeOffer(client, offer)

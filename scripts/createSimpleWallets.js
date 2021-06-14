@@ -13,10 +13,10 @@ const { get_tokens_from_giver } = require('./giverConfig.js')
 const { SimpleWalletContract } = require('../artifacts/SimpleWalletContract.js')
 
 
-async function main(client) {
+async function main(client, cnt) {
     const keys = JSON.parse(fs.readFileSync(keysFile, "utf8"));
 
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < cnt; i++) {
       console.log(`Initializing simple wallet...`)
       const simpleWallet = new Account(SimpleWalletContract, {signer: signerKeys(keys), client: client, initData: {nonce: i} });
       await get_tokens_from_giver(client, await simpleWallet.getAddress(), 1000)
@@ -35,7 +35,11 @@ async function main(client) {
             }
         });
         console.log("Hello TON!");
-        await main(client);
+        var cnt = 1;
+        if (process.argv.length == 3) {
+            cnt = parseInt(process.argv[2])
+        }
+        await main(client, cnt);
         process.exit(0);
     } catch (error) {
         console.error(error);

@@ -1,7 +1,7 @@
-## Compiling 
+## Compiling
 Run `./compile.sh` to compile Root.sol, XRT.sol and Lighthouse.sol and move all the artifacts to the corresponding folder.
 
-Also run `./compile.sh SimpleWallet` and `./compile.sh robonomics/validator/MultiValidatorExample` to compile additional contacts (you have to do it when working with test network). 
+Also run `./compile.sh SimpleWallet` and `./compile.sh robonomics/validator/MultiValidatorExample` to compile additional contacts (you have to do it when working with test network).
 
 ## Configure
 All the interaction scripts read config parameters (e.g. which network to use) from config.js file. See it for more info.
@@ -35,8 +35,6 @@ After balance refilled, you can register one or several providers with `node reg
 
 ## Using a provider
 Registered a provider, you can consume one quota with `node no_liabilities.js`, refill or withdraw stake, create and then finalize liability with the corresponding scripts. Also you may wait for the timeout and check charging fines mechanism with `node checkTimeout.js`, or test on-chain validator finalization (you have to edit createLiability script for this).
-
-By now you have to manually copy the liability hash printed by createLiability and paste it in finalizeLiability script.
 
 # Demo
 You can use [demo](https://www.youtube.com/watch?v=ZvAqjMXXaHY) as a reference.

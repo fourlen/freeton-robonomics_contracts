@@ -62,7 +62,7 @@ async function signHash(client, hash, keys) {
     })).boc;
 }
 
-async function main(client) {
+async function main(client, liabilityHash) {
     const keys = JSON.parse(fs.readFileSync(keysFile, "utf8"));
     const simpleWallet = new Account(SimpleWalletContract, {signer: signerKeys(keys), client: client, initData: {nonce: 0} });
     const { root, xrt } = await constructContracts(client, keys)
@@ -81,7 +81,8 @@ async function main(client) {
        }
     });
 
-    const liabilityHash = '0x501a89e93fdd70cfec3eb42fa9e8a5a2bbb5ce2ff785fe505f708597dc17a493'
+    // now it is taken from CL agruments
+    //const liabilityHash = '0x501a89e93fdd70cfec3eb42fa9e8a5a2bbb5ce2ff785fe505f708597dc17a493'
 
     var dataCell = (await client.boc.encode_boc({
         builder: [
@@ -160,7 +161,11 @@ async function main(client) {
             }
         });
         console.log("Hello TON!");
-        await main(client);
+        if (process.argv.length < 3) {
+            console.log('Please specify liability hash as CLI agrument')
+            process.exit(1);
+        }
+        await main(client, process.argv[2]);
         process.exit(0);
     } catch (error) {
         console.error(error);
