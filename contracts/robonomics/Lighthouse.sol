@@ -19,7 +19,7 @@ contract Lighthouse {
     mapping(uint64 => address) public providersQueue;
     mapping(address => uint64) public queuePos;
 
-    uint128 public currentQuota;
+    uint128 public currentQuota; // 1 quota = valuePerQuota tokens
     uint32 public lastAction; // unixtime of last action of the current provider
 
     mapping(address => uint128) public stakes; // provider stakes in quotas (1 quota = valuePerQuota tokens)
@@ -34,8 +34,8 @@ contract Lighthouse {
 
     LighthouseParams public lighthouseParams; // parametrs of this lighthouse
 
-    address static public root;
-    address static public xrt;
+    address static public root; //only root can create lighthouse
+    address static public xrt;  //XRT address that this root can mint
 
     constructor(LighthouseParams params) public functionID(1) {
       // check that we are not being deployed by a hacker
@@ -60,16 +60,18 @@ contract Lighthouse {
     }
 
     modifier returnsChange() {
-        tvm.rawReserve(address(this).balance - msg.value, 0);
+        tvm.rawReserve(address(this).balance - msg.value, 0); //reserves extra EVERs
 
-        _;
+        _;  //code goes here
 
-        msg.sender.transfer({value: 0, flag: 128});
+        msg.sender.transfer({value: 0, flag: 128}); //transfers the reserved EVERs (flag 128 means to send all tokens from this contract)
     }
 
-
+    //the number of all quieries
     uint64 private totalQueries;
 
+
+    //struct for lighthouse quierise
     struct QueryInfo {
         address expected; // the address from which the response is expected
         TvmCell info; // some algebraic type, see the usage
@@ -117,13 +119,16 @@ contract Lighthouse {
         }
     }
 
+
+    //add new query to the pending queries
     function addQuery(QueryInfo queryInfo) internal returns (uint32 index) {
-        totalQueries++;
+        totalQueries++; //increases the number of all queries by 1
         index = 1000 + uint32(totalQueries & 0x7fffffff); // mod 2^31
 
         require(queries.add(index, queryInfo)); // check that index isn't already used
     }
 
+    // get query info
     // to fix lack of constructors of structure
     function _QueryInfo(address expected, TvmCell info) internal inline returns (QueryInfo res) {
         res.expected = expected;
@@ -132,11 +137,11 @@ contract Lighthouse {
 
     function refillBalance(address token, uint128 value) external functionID(2) returnsChange {
         TvmBuilder queryInfo;
-        queryInfo.storeUnsigned(0, 3); // constructor tag
-        queryInfo.store(token, msg.sender, value);
-        uint32 index = addQuery(_QueryInfo(token, queryInfo.toCell()));
+        queryInfo.storeUnsigned(0, 3); // constructor tag (0 == refillBalance)
+        queryInfo.store(token, msg.sender, value); //add query params
+        uint32 index = addQuery(_QueryInfo(token, queryInfo.toCell())); //add refill balance query
 
-        TvmBuilder payload;
+        TvmBuilder payload; //answer
         payload.storeUnsigned(26 /*transferFrom function id*/, 32);
         payload.storeUnsigned(index, 32); // answer_id
         payload.store(msg.sender, address(this), value); // arguments of IERC20.transferFrom
@@ -148,8 +153,8 @@ contract Lighthouse {
 
     function withdrawBalance(address token, uint128 value) external functionID(3) returnsChange {
         TvmBuilder queryInfo;
-        queryInfo.storeUnsigned(2, 3); // constructor tag
-        queryInfo.store(token, msg.sender, value);
+        queryInfo.storeUnsigned(2, 3); // constructor tag (2 == withdrawBalance)
+        queryInfo.store(token, msg.sender, value); //add query params
         uint32 index = addQuery(_QueryInfo(token, queryInfo.toCell()));
 
         TvmBuilder payload;
@@ -196,14 +201,14 @@ contract Lighthouse {
         // == for structures is not supported yet
         // we deal with it in createLiability by comparing hashes
         // require(demand.terms == offer.terms);
-
+        //check that demand and offer are relevant
         require(now < demand.deadline);
         require(now < offer.deadline);
 
         // check that the provider hasn't switched demmand and offer cells
         require(demand.isDemand);
         require(!offer.isDemand);
-
+        // check that this lighthouse covers demand and offer
         require(demand.lighthouse == offer.lighthouse);
         require(demand.lighthouse == address(this));
     }
@@ -230,6 +235,7 @@ contract Lighthouse {
         // validate the match
         checkDemandOffer(demand, offer);
         // instead of require(demand.terms == offer.terms);
+        // check that demand terms is the same as offer terms
         require(tvm.hash(demandCell.toSlice().loadRef()) == tvm.hash(offerCell.toSlice().loadRef()));
 
 
@@ -253,10 +259,11 @@ contract Lighthouse {
         hashUsed[demandHash] = true;
         hashUsed[offerHash] = true;
         // Fees charging
-        transferBalance(liability.customerAddress, address(this), xrt, liability.validatorFee);
-        transferBalance(liability.customerAddress, address(this), liability.terms.token, liability.terms.cost);
-        transferBalance(liability.executorAddress, address(this), liability.terms.token, liability.terms.penalty);
-        transferBalance(liability.executorAddress, msg.sender, xrt, offer.providerFee);
+        //lighthouse will save some tokens before result
+        transferBalance(liability.customerAddress, address(this), xrt, liability.validatorFee); //send {validatorFee} XRTs to the lighthouse from customer
+        transferBalance(liability.customerAddress, address(this), liability.terms.token, liability.terms.cost); //send {cost} liability tokens to the lighthouse from customer
+        transferBalance(liability.executorAddress, address(this), liability.terms.token, liability.terms.penalty); //send {penalty} liability tokens to the lighthouse from executor
+        transferBalance(liability.executorAddress, msg.sender, xrt, offer.providerFee); //senf {providerFee} XRTs from executor to the liability creator
 
         emit NewLiability(liabilityHash, demandHash, offerHash);
 
@@ -267,11 +274,11 @@ contract Lighthouse {
         Liability liability = liabilityByHash[liabilityHash];
 
         if (success)
-            transferBalance(address(this), liability.executorAddress, liability.terms.token, liability.terms.cost + liability.terms.penalty);
+            transferBalance(address(this), liability.executorAddress, liability.terms.token, liability.terms.cost + liability.terms.penalty); //send the payment to the executor
         else
-            transferBalance(address(this), liability.customerAddress, liability.terms.token, liability.terms.cost + liability.terms.penalty);
+            transferBalance(address(this), liability.customerAddress, liability.terms.token, liability.terms.cost + liability.terms.penalty); //send custmoer his tokens back
 
-        transferBalance(address(this), validatorPaymentAddress, xrt, liability.validatorFee);
+        transferBalance(address(this), validatorPaymentAddress, xrt, liability.validatorFee);   //send a fee to the validator
 
         delete liabilityByHash[liabilityHash];
         emit LiabilityFinalized(liabilityHash, success, result);
@@ -339,11 +346,16 @@ contract Lighthouse {
         consumeQuota();
     }
 
-    function queuePush(address providerAddress) internal returns (uint64) {
-        uint64 index = totalQueue++;
-        providersQueue[index] = providerAddress;
-        queuePos[providerAddress] = index;
 
+    //add provider to the queue
+    function queuePush(address providerAddress) internal returns (uint64) {
+        uint64 index = totalQueue++;    //future provider index
+        //add provider to the provider queue
+        providersQueue[index] = providerAddress; 
+        queuePos[providerAddress] = index;  
+
+
+        //set this provider as current if there is not current provider
         if (!currentProvider.hasValue()) {
             currentProvider = index;
             currentQuota = stakes[providerAddress];
@@ -369,6 +381,7 @@ contract Lighthouse {
             currentProvider.reset();
     }
 
+    //move provider to the of the queue and set currentProvder as the next one in the queue
     function quotaConsumed() internal {
         address providerAddress = providersQueue[currentProvider.get()];
         delete providersQueue[currentProvider.get()];
@@ -376,13 +389,14 @@ contract Lighthouse {
         moveMarker();
     }
 
+    //if provider has no quotas, move provider to the of the queue and set currentProvder as the next one in the queue
     function consumeQuota() internal {
         currentQuota -= 1;
         if (currentQuota == 0) {
             quotaConsumed();
         }
     }
-
+    //delete provider and set currentProvder as the next one in the queue
     function deleteProvider(address providerAddress) internal {
         if (providerAddress == providersQueue[currentProvider.get()]) {
             moveMarker();
@@ -395,6 +409,10 @@ contract Lighthouse {
         delete queuePos[providerAddress];
     }
 
+
+    //decrease provider stake, if provider has no stake, delete him
+    //if provider is currentProvider decrease quotas and if provider has no quotas, 
+    //move provider to the of the queue and set currentProvder as the next one in the queue
     function decreaseStake(address providerAddress, uint128 value) internal {
         stakes[providerAddress] -= value;
 
@@ -410,12 +428,16 @@ contract Lighthouse {
 
     }
 
+
+    //charge fine for not being online
     function chargeFine(address providerAddress, uint128 value) internal {
         uint128 actualValue = math.min(stakes[providerAddress], value);
         decreaseStake(providerAddress, actualValue);
         emit FineCharged(providerAddress, actualValue);
     }
 
+
+    //check timeout and charge fime from current provider for every period
     function checkTimeout() external functionID(7) returnsChange {
         if (lastAction + lighthouseParams.timeout < now) {
             uint32 periods = (now - lastAction) / lighthouseParams.timeout;

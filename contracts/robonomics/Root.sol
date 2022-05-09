@@ -3,17 +3,21 @@ pragma ton-solidity >= 0.42.0;
 import './Lighthouse.sol';
 import './XRT.sol';
 
+
+//root is a person who can mint XRT, create lighthouses
+
+
 contract Root  {
     event NewLighthouse(address lighthouse, string name);
 
     mapping(address => bool) public isLighthouse; // should be used unit type instead
 
     modifier returnsChange() {
-        tvm.rawReserve(address(this).balance - msg.value, 0);
+        tvm.rawReserve(address(this).balance - msg.value, 0); //reserves extra EVERs
 
-        _;
+        _;  //code goes here
 
-        msg.sender.transfer({value: 0, flag: 128});
+        msg.sender.transfer({value: 0, flag: 128}); //transfers the reserved EVERs (flag 128 means to send all tokens from this contract)
     }
 
 
@@ -22,19 +26,22 @@ contract Root  {
         uint128 value;
     }
 
+
+    //When you create a root, you must specify the address of the XRT token and toMint array.
+    //each {ToMint.to} will receive {ToMint.value} XRT
     constructor(address _xrt, ToMint[] toMint) public {
         require(msg.pubkey() == tvm.pubkey()); // check that we are not being deployed by a hacker
         tvm.accept();
 
-        xrt = _xrt;
+        xrt = _xrt;   //Bind root to the XRT address
 
         for (ToMint info : toMint) {
-            XRT(xrt).mint{value: 0.5 ton}(info.to, info.value);
+            XRT(xrt).mint{value: 0.5 ton}(info.to, info.value);     //mint {ToMint.value} XRT for every {toMint.to}
         }
     }
 
-    uint256 static public lighthouseCodeHash;
-    address public xrt;
+    uint256 static public lighthouseCodeHash; //lighthouse code hash is needed to release the only version of lighthouse
+    address public xrt; //XRT address that this user can mint
 
     // cost: value (should be >= gasToValue(1000000, 0) ~= 1 ton) nanotons for lighthouse balance + fees; returns change
     function createLighthouse(
@@ -52,7 +59,7 @@ contract Root  {
         tvm.rawReserve(address(this).balance - msg.value, 0);
         // tvm.rawReserve(msg.value, 12); looks better; not sure, if flag = 12 works properly
 
-        require(tvm.hash(lighthouseCode) == lighthouseCodeHash);
+        require(tvm.hash(lighthouseCode) == lighthouseCodeHash);    //check for the release of the correct lighthouse
 
         uint256 LIGHTHOUSE_NODE
             // lighthouse.5.robonomics.ton
