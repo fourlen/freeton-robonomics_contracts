@@ -263,7 +263,7 @@ contract Lighthouse {
         transferBalance(liability.customerAddress, address(this), xrt, liability.validatorFee); //send {validatorFee} XRTs to the lighthouse from customer
         transferBalance(liability.customerAddress, address(this), liability.terms.token, liability.terms.cost); //send {cost} liability tokens to the lighthouse from customer
         transferBalance(liability.executorAddress, address(this), liability.terms.token, liability.terms.penalty); //send {penalty} liability tokens to the lighthouse from executor
-        transferBalance(liability.executorAddress, msg.sender, xrt, offer.providerFee); //senf {providerFee} XRTs from executor to the liability creator
+        transferBalance(liability.executorAddress, msg.sender, xrt, offer.providerFee); //send {providerFee} XRTs from executor to the liability creator
 
         emit NewLiability(liabilityHash, demandHash, offerHash);
 

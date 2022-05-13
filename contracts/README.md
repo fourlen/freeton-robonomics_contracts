@@ -46,3 +46,25 @@ Ways to fix:
 \
 Ways to fix: 
    * forcibly delete expired liabilities, make the price of createLiability depend on the deadline time.
+
+
+## Definitions
+There is a root - person who can mint XRT, create lighthouses, 
+XRT - is a ERC20 token that used to pay robots,
+customer - person who publishes the demand,
+executor - person who publishes the offer,
+lighthouse - smart-contract that matches demand and offer,
+validator - person who monitors execution of the offer,
+provider - person who placed his stake in lighthouse and receives a fee for doing work within the system
+
+
+## How it works
+1. Customer publishes the demand, executor publishes the offer.
+2. Lighthouse matches demand and offer and creates a liability.
+3. Executor starts work.
+4. After work, the executor sends a log of operations performed.
+5. Validtors decide if the liability is done.
+6. Validtors send a message about the result.
+7. Lighthouse finalizes the liability.
+8. Validators recieve fee in Ever, Provider in XRT.
+9. Executor gets payment.
