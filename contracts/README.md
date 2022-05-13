@@ -49,12 +49,12 @@ Ways to fix:
 
 
 ## Definitions
-There is a root - person who can mint XRT, create lighthouses, 
-XRT - is a ERC20 token that used to pay robots,
-customer - person who publishes the demand,
-executor - person who publishes the offer,
-lighthouse - smart-contract that matches demand and offer,
-validator - person who monitors execution of the offer,
+There is a root - person who can mint XRT, create lighthouses,  
+XRT - is a ERC20 token that used to pay robots,  
+customer - person who publishes the demand,  
+executor - person who publishes the offer,  
+lighthouse - smart-contract that matches demand and offer,  
+validator - person who monitors execution of the offer,  
 provider - person who placed his stake in lighthouse and receives a fee for doing work within the system
 
 
