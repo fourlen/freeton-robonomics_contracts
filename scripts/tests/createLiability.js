@@ -155,7 +155,7 @@ async function main(client) {
 
     const terms = {
       model: Buffer.from('Super model'),
-      objective: Buffer.from('Very important objective'),
+      objective: Buffer.from('Turn on/off a bulb'),
       cost: 1,
       token: await xrt.getAddress(),
       penalty: 2,

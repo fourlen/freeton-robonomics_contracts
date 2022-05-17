@@ -38,3 +38,6 @@ Registered a provider, you can consume one quota with `node no_liabilities.js`, 
 
 # Demo
 You can use [demo](https://www.youtube.com/watch?v=ZvAqjMXXaHY) as a reference.
+
+## Example of using
+In this example we will turn on the bulb. In createLiability.js I changed the terms in line 158 to `Turn on/off a bulb`, and added a python poller that catches new lighthouse transactions. Start poller with `python main.py`, change the terminal and create new liability with `node createLiability.js`. Poller will catch it and turn on the bulb. [Video](https://www.youtube.com/watch?v=jmFMFNns7nM) of this example.
